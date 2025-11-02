@@ -1,7 +1,10 @@
 [project]
 name = "api-server"
 version = "0.1.0"
-description = "Add your description here"
+description = "ASGI server that handles requests for SocioLens"
+authors = [
+  { name = "Ananth Sankar", email = "ananthsankar2003@gmail.com" }
+]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
