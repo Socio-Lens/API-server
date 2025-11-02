@@ -13,5 +13,8 @@ def autodetect_device():
         device_type = 'cpu'
         
     logger.info(f"Autodetected device type as {device_type}")
+    return device_type
         
     
+if __name__ == "__main__":
+    print(autodetect_device())
