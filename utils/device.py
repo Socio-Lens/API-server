@@ -18,3 +18,6 @@ def autodetect_device():
     
 if __name__ == "__main__":
     print(autodetect_device())
+    
+    
+__all__ = ['autodetect_device']
