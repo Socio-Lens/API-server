@@ -4,11 +4,14 @@ import os
 import asyncio
 from routes.internal import background_health_checker
 from utils.router import include_route_modules
-from utils.worker import Worker, WorkerPool
+from utils.worker import WorkerPool
 from utils.config import Config
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request
+from slowapi.errors import RateLimitExceeded
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
 from contextlib import asynccontextmanager
+
 
 parser = argparse.ArgumentParser(description='SocioLens Web Server')
 parser.add_argument('-n', '--num-gpus', type=int, default=1, help='Number of GPUs to use (default: 1)')
@@ -53,11 +56,16 @@ async def lifespan(app: FastAPI):
             await app.state.health_checker_task
         except asyncio.CancelledError:
             logger.info("Background health checker stopped")
+            
+app = FastAPI(lifespan=lifespan)         
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/")
+@limiter.limit("5/minute")
 def root(request: Request):
     return {"status": "ok", "msg": "SocioLens ASGI server" }
 
