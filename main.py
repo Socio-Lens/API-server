@@ -1,53 +1,46 @@
 import argparse
 import logging
 import os
+from utils.router import include_route_modules
+from utils.worker import Worker, WorkerPool
+from utils.config import Config
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from contextlib import asynccontextmanager
 
 parser = argparse.ArgumentParser(description='SocioLens Web Server')
 parser.add_argument('-n', '--num-gpus', type=int, default=1, help='Number of GPUs to use (default: 1)')
 parser.add_argument('-p', '--port', type=int, default=8000, help='Port to run the server on')
-parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the server to')
+parser.add_argument('--host', type=str, default='127.0.0.1', help='Host to bind the server to')
 parser.add_argument('--debug', action='store_true')
 args = parser.parse_args()
 
-templates = Jinja2Templates(directory="content")
+config = Config()
 
-SERVICES = {
-    "SocioLens API": "http://localhost:8000/",
-    "GitHub": "https://api.github.com",
-    "Google": "https://www.google.com",
-    "FastAPI": "https://fastapi.tiangolo.com"
-}
-
-# Health state
-health_data = {name: {"url": url, "status": "Unknown", "last_checked": None} for name, url in SERVICES.items()}
-
-
-logging.basicConfig(
-    level=logging.DEBUG if args.debug else logging.INFO,
-    format='%(asctime)s [%(levelname)s] - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
+# --- Logging: guard against double configuration ---
+root_logger = logging.getLogger()
+if not root_logger.handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler()],
+    )
 logger = logging.getLogger(__name__)
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
 
-@app.get("/health")
-def health(request: Request, response_class=HTMLResponse):
-    return templates.TemplateResponse("health.html", {"request": request, "services": health_data})
-    
-    
-@app.get("/pid")
-def pid():
-    return {
-        "pid": os.getpid()
-    }
+    logger.info("Loading models across available GPUs...")
+    app.state.worker_pool = WorkerPool()
+
+    await app.state.worker_pool.initialize(config)
+    include_route_modules(app)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/")
