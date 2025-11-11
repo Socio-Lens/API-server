@@ -44,15 +44,15 @@ class WorkerPool:
         if os.path.exists(SAVE_DIR):
             logger.info("Model exists locally, skipping download")
         else:
-            tokenizer = AutoTokenizer.from_pretrained(config.model_name)
-            model = AutoModelForSequenceClassification.from_pretrained(config.model_name)
+            tokenizer = AutoTokenizer.from_pretrained(os.path.join(SAVE_DIR, config.model_name))
+            model = AutoModelForSequenceClassification.from_pretrained(os.path.join(SAVE_DIR, config.model_name))
 
             model.save_pretrained(SAVE_DIR)
             tokenizer.save_pretrained(SAVE_DIR)
 
             logger.info(f"Saved pretrained model to {SAVE_DIR}")
 
-        logger.info(f"Initializing worker pool with {self.num_gpus} GPUs...")
+        logger.info(f"Initializing worker pool with {self.num_gpus} worker(s)...")
         if self.num_gpus > 1:
             assert self.device_type == "cuda", "Only CUDA supports multiple workers/GPUs. cpu|mps does not."
 
