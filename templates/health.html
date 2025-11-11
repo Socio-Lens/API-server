@@ -9,8 +9,9 @@
 </head>
 
 <body class="bg-gray-100 text-gray-900">
-    <div class="max-w-3xl mx-auto p-6">
+    <div class="max-w-5xl mx-auto p-6">
         <h1 class="text-3xl font-bold mb-6 text-center">API Health Dashboard</h1>
+        
         <table class="w-full bg-white shadow rounded-lg overflow-hidden">
             <thead class="bg-gray-200">
                 <tr>
@@ -36,6 +37,55 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- Uptime History Section -->
+        <div class="mt-8 bg-white shadow rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Uptime History</h2>
+            <p class="text-sm text-gray-600 mb-4">Last 90 checks (approximately 15 hours at 10-minute intervals)</p>
+            
+            {% for name, info in services.items() %}
+            <div class="mb-6">
+                <h3 class="text-md font-semibold mb-2">{{ name }}</h3>
+                <div class="flex items-center gap-1 h-12 bg-gray-50 rounded p-2">
+                    {% if info.history %}
+                        {% for entry in info.history %}
+                        <div 
+                            class="flex-1 h-full rounded-sm transition-colors
+                                {% if entry.status == 'Ready' %}bg-green-500
+                                {% elif entry.status == 'Not ready' %}bg-red-500
+                                {% else %}bg-yellow-500{% endif %}"
+                            title="{{ entry.status }} at {{ entry.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}"
+                        ></div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="flex-1 h-full bg-gray-300 rounded-sm flex items-center justify-center">
+                            <span class="text-xs text-gray-600">No data yet</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>90 checks ago</span>
+                    <span>Now</span>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Legend -->
+            <div class="flex gap-4 mt-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-green-500 rounded"></div>
+                    <span>Operational</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-yellow-500 rounded"></div>
+                    <span>Degraded</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-red-500 rounded"></div>
+                    <span>Down</span>
+                </div>
+            </div>
+        </div>
     </div>
 
 </body>

@@ -1,4 +1,4 @@
-# app/routes/health.py\
+# app/routes/health.py
 import os
 import logging
 from utils.functions import humanize_time
@@ -6,8 +6,14 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from collections import deque
 
 logger = logging.getLogger(__name__)
+
+# Store status history (max 90 entries = ~15 hours at 10-min intervals)
+STATUS_HISTORY = {
+    "SocioLens API": deque(maxlen=90)
+}
 
 SERVICES = {
     "SocioLens API": {
@@ -35,9 +41,6 @@ def pid():
 
 @router.get("/health", response_class=HTMLResponse)
 def health(request: Request):
-
-
-        
     for name, meta in SERVICES.items():
         if _should_update(meta['last_checked']):
             logger.debug(name)
@@ -48,13 +51,26 @@ def health(request: Request):
                 
             SERVICES[name]['last_checked'] = datetime.now(timezone.utc)
             
-    health_data = { name: { 'route': meta['route'], 'status': meta['status'], 'last_checked': humanize_time(meta['last_checked']) } for name, meta in SERVICES.items() }
+            # Add to history
+            STATUS_HISTORY[name].append({
+                "status": SERVICES[name]["status"],
+                "timestamp": SERVICES[name]['last_checked']
+            })
+            
+    health_data = { 
+        name: { 
+            'route': meta['route'], 
+            'status': meta['status'], 
+            'last_checked': humanize_time(meta['last_checked']),
+            'history': list(STATUS_HISTORY[name])
+        } 
+        for name, meta in SERVICES.items() 
+    }
             
     return templates.TemplateResponse("health.html", { "request": request, 'services': health_data })
 
 @router.get("/workers")
 def health(request: Request):
-    
     worker_pool = getattr(request.app.state, 'worker_pool', None)
     return {
         "status": "ok",
@@ -62,6 +78,3 @@ def health(request: Request):
         "num_gpus": worker_pool.num_gpus if worker_pool else 0,
         "available_workers": worker_pool.available_workers.qsize() if worker_pool else 0
     }
-    
-
-
