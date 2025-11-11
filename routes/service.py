@@ -13,6 +13,10 @@ router = APIRouter(prefix="/service", tags=["service"])
 class PostInput(BaseModel):
     text: str
 
+
+def validate_request(request):
+    pass
+
 @router.post("/", summary="Classify sentiment of a social media post")
 async def classify_sentiment(request: Request, post: PostInput):
 
