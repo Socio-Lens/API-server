@@ -40,17 +40,18 @@ class WorkerPool:
         
 
     async def initialize(self, config: Config):
-        SAVE_DIR = f"{config.model_dir}/pretrained"
-        if os.path.exists(SAVE_DIR):
+        model_name = config.model_name
+        local_model_path = os.path.join(config.model_dir, model_name.replace('/', '_'))
+        if os.path.exists(local_model_path):
             logger.info("Model exists locally, skipping download")
         else:
-            tokenizer = AutoTokenizer.from_pretrained(os.path.join(SAVE_DIR, config.model_name))
-            model = AutoModelForSequenceClassification.from_pretrained(os.path.join(SAVE_DIR, config.model_name))
+            tokenizer = AutoTokenizer.from_pretrained(config.model_name)
+            model = AutoModelForSequenceClassification.from_pretrained(config.model_name)
 
-            model.save_pretrained(SAVE_DIR)
-            tokenizer.save_pretrained(SAVE_DIR)
+            model.save_pretrained(local_model_path)
+            tokenizer.save_pretrained(local_model_path)
 
-            logger.info(f"Saved pretrained model to {SAVE_DIR}")
+            logger.info(f"Saved pretrained model to {local_model_path}")
 
         logger.info(f"Initializing worker pool with {self.num_gpus} worker(s)...")
         if self.num_gpus > 1:
@@ -66,8 +67,8 @@ class WorkerPool:
                 logger.info(f"Loading model on {self.device_type}")
 
             
-            tokenizer = AutoTokenizer.from_pretrained(config.model_name)
-            model = AutoModelForSequenceClassification.from_pretrained(config.model_name)
+            tokenizer = AutoTokenizer.from_pretrained(local_model_path)
+            model = AutoModelForSequenceClassification.from_pretrained(local_model_path)
             model.to(device)
             model.eval()
 
