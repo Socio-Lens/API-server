@@ -15,7 +15,7 @@
             <thead class="bg-gray-200">
                 <tr>
                     <th class="text-left py-3 px-4">Service</th>
-                    <th class="text-left py-3 px-4">URL</th>
+                    <th class="text-left py-3 px-4">Route</th>
                     <th class="text-left py-3 px-4">Status</th>
                     <th class="text-left py-3 px-4">Last Checked</th>
                 </tr>
@@ -24,10 +24,10 @@
                 {% for name, info in services.items() %}
                 <tr class="border-t">
                     <td class="py-3 px-4 font-medium">{{ name }}</td>
-                    <td class="py-3 px-4 text-blue-600">{{ info.url }}</td>
+                    <td class="py-3 px-4 text-blue-600">{{ info.route }}</td>
                     <td class="py-3 px-4">
                         <span
-                            class="{% if info.status == 'Up' %}text-green-600{% elif info.status == 'Down' %}text-red-600{% else %}text-gray-500{% endif %}">
+                            class="{% if info.status == 'Ready' %}text-green-600{% elif info.status == 'Not ready' %}text-red-600{% else %}text-gray-500{% endif %}">
                             {{ info.status }}
                         </span>
                     </td>
