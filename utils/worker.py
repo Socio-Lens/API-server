@@ -7,10 +7,13 @@ from utils.device import autodetect_device
 from typing import Optional, List
 from dataclasses import dataclass
 from pydantic import BaseModel
+from transformers import logging as hf_logging
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 
 logger = logging.getLogger(__name__)
+
+hf_logging.set_verbosity(50)
 
 @dataclass
 class Worker:
@@ -78,7 +81,7 @@ class WorkerPool:
             self.workers.append(worker)
             await self.available_workers.put(worker)
 
-        print(f"All {self.num_gpus} workers initialized")
+        logger.info(f"All {self.num_gpus} workers initialized")
 
     async def acquire_worker(self) -> Worker:
         return await self.available_workers.get()
