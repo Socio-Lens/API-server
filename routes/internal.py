@@ -1,6 +1,7 @@
 # app/routes/health.py
 import os
 import logging
+import asyncio
 from utils.functions import humanize_time
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request
@@ -30,8 +31,42 @@ def _should_update(last_checked: datetime | None, threshold_minutes: int = 10) -
     now = datetime.now(timezone.utc)
     return (now - last_checked) > timedelta(minutes=threshold_minutes)
 
+def check_service_status(app):
+    """Check the status of services and update history."""
+    for name, meta in SERVICES.items():
+        if name == 'SocioLens API':
+            worker_pool = getattr(app.state, 'worker_pool', None)
+            ready = worker_pool is not None and getattr(worker_pool, "workers", None) and len(worker_pool.workers) > 0
+            SERVICES[name]["status"] = "Ready" if ready else "Not ready"
+            
+        SERVICES[name]['last_checked'] = datetime.now(timezone.utc)
+        
+        # Add to history
+        STATUS_HISTORY[name].append({
+            "status": SERVICES[name]["status"],
+            "timestamp": SERVICES[name]['last_checked']
+        })
+        
+        logger.info(f"Health check: {name} - {SERVICES[name]['status']}")
+
+async def background_health_checker(app):
+    """Background task that runs health checks every 10 minutes."""
+    logger.info("Starting background health checker")
+    
+    # Do an initial check immediately
+    check_service_status(app)
+    
+    while True:
+        try:
+            await asyncio.sleep(600)  # 10 minutes
+            check_service_status(app)
+        except asyncio.CancelledError:
+            logger.info("Background health checker stopped")
+            break
+        except Exception as e:
+            logger.error(f"Error in background health checker: {e}")
+
 templates = Jinja2Templates(directory="templates")
-health_data = {name: {"url": url, "status": "Unknown", "last_checked": None} for name, url in SERVICES.items()}
 router = APIRouter(prefix="/internal", tags=["internal"])
 
 
@@ -41,27 +76,12 @@ def pid():
 
 @router.get("/health", response_class=HTMLResponse)
 def health(request: Request):
-    for name, meta in SERVICES.items():
-        if _should_update(meta['last_checked']):
-            logger.debug(name)
-            if name == 'SocioLens API':
-                worker_pool = request.app.state.worker_pool
-                ready = worker_pool is not None and getattr(worker_pool, "workers", None) and len(worker_pool.workers) > 0
-                SERVICES[name]["status"] = "Ready" if ready else "Not ready"
-                
-            SERVICES[name]['last_checked'] = datetime.now(timezone.utc)
-            
-            # Add to history
-            STATUS_HISTORY[name].append({
-                "status": SERVICES[name]["status"],
-                "timestamp": SERVICES[name]['last_checked']
-            })
-            
+    # Just return the current data, no need to update here
     health_data = { 
         name: { 
             'route': meta['route'], 
             'status': meta['status'], 
-            'last_checked': humanize_time(meta['last_checked']),
+            'last_checked': '...' if not meta['last_checked'] else humanize_time(meta['last_checked']),
             'history': list(STATUS_HISTORY[name])
         } 
         for name, meta in SERVICES.items() 
@@ -70,7 +90,7 @@ def health(request: Request):
     return templates.TemplateResponse("health.html", { "request": request, 'services': health_data })
 
 @router.get("/workers")
-def health(request: Request):
+def workers(request: Request):
     worker_pool = getattr(request.app.state, 'worker_pool', None)
     return {
         "status": "ok",
@@ -78,3 +98,20 @@ def health(request: Request):
         "num_gpus": worker_pool.num_gpus if worker_pool else 0,
         "available_workers": worker_pool.available_workers.qsize() if worker_pool else 0
     }
+
+# Startup event handler - add this to your main FastAPI app
+async def start_health_checker(app):
+    """Call this from your FastAPI app's startup event."""
+    task = asyncio.create_task(background_health_checker(app))
+    app.state.health_checker_task = task
+    return task
+
+# Shutdown event handler - add this to your FastAPI app's shutdown event
+async def stop_health_checker(app):
+    """Call this from your FastAPI app's shutdown event."""
+    if hasattr(app.state, 'health_checker_task'):
+        app.state.health_checker_task.cancel()
+        try:
+            await app.state.health_checker_task
+        except asyncio.CancelledError:
+            pass

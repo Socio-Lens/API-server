@@ -1,6 +1,8 @@
 import argparse
 import logging
 import os
+import asyncio
+from routes.internal import background_health_checker
 from utils.router import include_route_modules
 from utils.worker import Worker, WorkerPool
 from utils.config import Config
@@ -31,14 +33,26 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     logger.info("Loading models across available GPUs...")
     app.state.worker_pool = WorkerPool()
 
     await app.state.worker_pool.initialize(config)
     include_route_modules(app)
+    
+    # Start background health checker as a task (don't await it!)
+    health_checker_task = asyncio.create_task(background_health_checker(app))
+    app.state.health_checker_task = health_checker_task
+    logger.info("Background health checker started")
+    
     yield
-
+    
+    # Cleanup: cancel the background task on shutdown
+    if hasattr(app.state, 'health_checker_task'):
+        app.state.health_checker_task.cancel()
+        try:
+            await app.state.health_checker_task
+        except asyncio.CancelledError:
+            logger.info("Background health checker stopped")
 
 app = FastAPI(lifespan=lifespan)
 
