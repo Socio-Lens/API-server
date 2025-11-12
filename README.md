@@ -120,7 +120,7 @@ to view the real-time service health dashboard with uptime, worker status, and m
 | **Gautham Krishnal J** | [Knightrider16](https://github.com/Knightrider16) | gauthamkrishnalj@gmail.com |
 | **Govind V Kartha** | [Govind-v-kartha](https://github.com/Govind-v-kartha) | knvgovind@gmail.com |
 | **Sreedev R** | [Sdvrx](https://github.com/Sdvrx) | sreedevr44@gmail.com |
-
+| **Manav M Nair** | [ManavMNair](https://github.com/ManavMNair) | manavmnair511@gmail.com |
 ---
 
 ## License
