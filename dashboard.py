@@ -78,18 +78,18 @@ with col1:
         
         # ONLY show the caption text area if a caption has been fetched
         if st.session_state.get('url_caption_input'):
-            st.markdown("### ✏️ Fetched Caption (editable)")
+            st.markdown("### Fetched Caption (editable)")
             caption_text = st.text_area(
                 "Caption:",
                 height=150,
                 key="url_caption_input"
             )
             # small control row to clear fetched caption
-            clear_col1, clear_col2 = st.columns([1, 3])
-            with clear_col1:
-                if st.button("Clear fetched caption"):
-                    st.session_state['url_caption_input'] = ""
-                    st.experimental_rerun()
+            # clear_col1, clear_col2 = st.columns([1, 3])
+            # with clear_col1:
+            #     if st.button("Clear fetched caption"):
+            #         st.session_state['url_caption_input'] = ""
+            #         st.experimental_rerun()
         else:
             caption_text = ""  # no caption available yet; keep blank
 
