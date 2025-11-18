@@ -4,7 +4,7 @@ import json
 import plotly.graph_objects as go
 import plotly.express as px
 from urllib.parse import urlparse
-from scripts.scrapper import caption_from_post_url
+# from scripts.InstaScrapper import caption_from_post_url
 
 # Page configuration
 st.set_page_config(
@@ -64,7 +64,7 @@ with col1:
                 st.stop()
             with st.spinner("Fetching caption from Instagram..."):
                 try:
-                    caption_text_fetched = caption_from_post_url(post_url)
+                    caption_text_fetched = "" #caption_from_post_url(post_url)
                     if caption_text_fetched:
                         # Store fetched caption into the text_area's session_state key
                         st.session_state['url_caption_input'] = caption_text_fetched
