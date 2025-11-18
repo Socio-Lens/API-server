@@ -94,7 +94,7 @@ st.markdown("""
 # Title with gradient
 st.markdown("""
 <div class="main-header">
-    <h1>✨ SocioLens Sentiment Classifier</h1>
+    <h1>SocioLens Sentiment Classifier</h1>
     <p>Analyze and improve Instagram post captions with AI-powered sentiment analysis</p>
 </div>
 """, unsafe_allow_html=True)
@@ -109,11 +109,11 @@ with st.sidebar:
         help="URL of your sentiment analysis backend"
     )
     
-    paraphrase_url = st.text_input(
-        "Caption Improvement URL",
-        value="http://example.com/paraphrase",
-        help="URL of your LLM paraphrase endpoint"
-    )
+    # paraphrase_url = st.text_input(
+    #     "Caption Improvement URL",
+    #     value="http://example.com/paraphrase",
+    #     help="URL of your LLM paraphrase endpoint"
+    # )
     
     st.markdown("---")
     
@@ -154,13 +154,13 @@ col1, col2 = st.columns([2, 1])
 with col1:
     input_method = st.radio(
         "Choose input method:",
-        ["📱 Instagram Post URL", "✍️ Direct Caption Text"],
+        ["Instagram Post URL", "Direct Caption Text"],
         horizontal=True
     )
     
     caption_text = ""
 
-    if input_method == "📱 Instagram Post URL":
+    if input_method == "Instagram Post URL":
         post_url = st.text_input(
             "Instagram Post URL",
             placeholder="https://www.instagram.com/p/...",
@@ -268,7 +268,7 @@ if analyze_button:
         st.session_state["original_caption"] = caption_text
         st.session_state["improved_caption"] = None  # Reset improved caption
         
-        with st.spinner("🔄 Analyzing sentiment..."):
+        with st.spinner("Analyzing sentiment..."):
             try:
                 response = requests.post(
                     f"{backend_url}/service",
@@ -422,7 +422,7 @@ if st.session_state.get("analysis_result"):
     
     # Caption Improvement Section
     st.markdown("---")
-    st.subheader("✨ Caption Enhancement")
+    st.subheader("Caption Enhancement")
     
     improve_col1, improve_col2 = st.columns([1, 3])
     
@@ -438,14 +438,14 @@ if st.session_state.get("analysis_result"):
         st.info("💡 Click to generate an AI-enhanced version of your caption with better sentiment")
     
     if improve_button:
-        with st.spinner("✨ Generating improved caption..."):
+        with st.spinner("Generating improved caption..."):
             try:
                 paraphrase_response = requests.post(
-                    paraphrase_url,
+                    f"{backend_url}/service/caption/optimize",
                     json={
-                        "text": st.session_state["original_caption"],
+                        "caption": st.session_state["original_caption"],
                         "sentiment": result['predicted_label'],
-                        "target_sentiment": "positive"  # Optional: specify target sentiment
+                        # "target_sentiment": "positive"  # Optional: specify target sentiment
                     },
                     headers={"Content-Type": "application/json"},
                     timeout=120
@@ -454,7 +454,7 @@ if st.session_state.get("analysis_result"):
                 if paraphrase_response.status_code == 200:
                     improved_data = paraphrase_response.json()
                     # Assuming the response has 'improved_text' field
-                    st.session_state["improved_caption"] = improved_data.get('improved_text', improved_data)
+                    st.session_state["improved_caption"] = improved_data['caption']
                     st.success("✅ Caption improved successfully!")
                 else:
                     st.error(f"❌ Error: Paraphrase API returned status code {paraphrase_response.status_code}")
@@ -468,29 +468,32 @@ if st.session_state.get("analysis_result"):
     
     # Display improved caption if available
     if st.session_state.get("improved_caption"):
-        st.markdown("### 🎨 Comparison")
+        st.markdown("### Comparison")
         
         comp_col1, comp_col2 = st.columns(2)
         
         with comp_col1:
             st.markdown("#### 📝 Original Caption")
-            st.markdown(f"""
-            <div class="comparison-card">
-                <p>{st.session_state["original_caption"]}</p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(st.session_state["original_caption"])
+            
+            # st.markdown(f"""
+            # <div class="comparison-card">
+            #     <p>{st.session_state["original_caption"]}</p>
+            # </div>
+            # """, unsafe_allow_html=True)
             
             if st.button("📋 Copy Original", key="copy_original", use_container_width=True):
                 st.code(st.session_state["original_caption"], language=None)
                 st.success("✅ Original caption ready to copy!")
         
         with comp_col2:
-            st.markdown("#### ✨ Improved Caption")
-            st.markdown(f"""
-            <div class="improved-caption-card">
-                <p>{st.session_state["improved_caption"]}</p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("#### Improved Caption")
+            st.markdown(st.session_state["improved_caption"])
+            # st.markdown(f"""
+            # <div class="improved-caption-card">
+            #     <p>{st.session_state["improved_caption"]}</p>
+            # </div>
+            # """, unsafe_allow_html=True)
             
             if st.button("📋 Copy Improved", key="copy_improved", use_container_width=True):
                 st.code(st.session_state["improved_caption"], language=None)
