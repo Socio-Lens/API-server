@@ -6,9 +6,11 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from modules.scrapper.InstaScrapper import InstaScrapper
+from modules.LLM.Groq import GroqClient
 
 
 logger = logging.getLogger(__name__)
+llmclient = GroqClient()
 router = APIRouter(prefix="/service", tags=["service"])
 
 class PostInput(BaseModel):
@@ -16,6 +18,10 @@ class PostInput(BaseModel):
     
 class CaptionInput(BaseModel):
     url: str
+    
+class OptimizeInput(BaseModel):
+    sentiment: str
+    caption: str
 
 
 def validate_request(request):
@@ -39,6 +45,13 @@ async def get_instagram_caption(request: Request, postInput: CaptionInput):
         logger.exception("Error fetching caption", e)
         raise HTTPException(status_code=502, detail="Failed to fetch caption")
     return {"caption": caption}
+
+@router.post("/caption/optimize", summary="Augment caption with a LLM")
+async def optimize_caption(request: Request, postInput: OptimizeInput):
+    return {
+        "caption": llmclient.optimizeCaption(postInput.sentiment, postInput.caption)
+    }
+    
 
 @router.post("/", summary="Classify sentiment of a social media post")
 async def classify_sentiment(request: Request, post: PostInput):
