@@ -10,6 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "beautifulsoup4>=4.14.2",
     "fastapi>=0.120.4",
+    "groq>=0.34.1",
     "instaloader>=4.15",
     "jinja2>=3.1.6",
     "lxml>=6.0.2",
@@ -20,5 +21,6 @@ dependencies = [
     "streamlit>=1.51.0",
     "torch>=2.9.0",
     "transformers>=4.57.1",
+    "twikit>=2.3.3",
     "uvicorn>=0.38.0",
 ]
