@@ -14,6 +14,7 @@ from slowapi.util import get_remote_address
 from contextlib import asynccontextmanager
 
 
+
 parser = argparse.ArgumentParser(description='SocioLens Web Server')
 parser.add_argument('-n', '--num-gpus', type=int, default=1, help='Number of GPUs to use (default: 1)')
 parser.add_argument('-p', '--port', type=int, default=8000, help='Port to run the server on')
@@ -75,11 +76,14 @@ def root(request: Request):
 if __name__ == "__main__":
     import uvicorn
     
-    logger.info(f"Starting web server on {args.host}:{args.port}")
+    host = os.getenv("HOST", args.host)
+    port = int(os.getenv("PORT", args.port))
+    
+    logger.info(f"Starting web server on {host}:{port}")
 
     if args.debug:
         # Works only if the module name can be imported (e.g., app.py)
         module_name = os.path.splitext(os.path.basename(__file__))[0]
-        uvicorn.run(f"{module_name}:app", host=args.host, port=args.port, reload=True)
+        uvicorn.run(f"{module_name}:app", host=host, port=port, reload=True)
     else:
         uvicorn.run(app, host=args.host, port=args.port, reload=False)
