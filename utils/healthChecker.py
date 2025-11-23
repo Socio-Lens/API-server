@@ -16,7 +16,7 @@ class HealthChecker:
                     continue
 
                 routeData = {
-                    "route": route.path,
+                    "path": route.path,
                     "methods": list(route.methods),
                     "name": route.name,
                     "description": route.description,

@@ -88,7 +88,7 @@ def health(request: Request):
     # Just return the current data, no need to update here
     health_data = { 
         name: { 
-            'route': meta['route'], 
+            'path': meta['path'], 
             'status': meta['status'], 
             'last_checked': '...' if not meta['last_checked'] else humanize_time(meta['last_checked']),
             'history': list(healthChecker.STATUS_HISTORY[name])
