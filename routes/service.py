@@ -27,7 +27,11 @@ class OptimizeInput(BaseModel):
 def validate_request(request):
     pass
 
-@router.post("/caption/instagram", summary="Get the caption from an Instagram URL")
+@router.post(
+    "/caption/instagram",
+    name="caption_instagram", 
+    summary="Get the caption from an Instagram URL"
+)
 async def get_instagram_caption(request: Request, postInput: CaptionInput):
     logger.debug(postInput)
     
@@ -46,14 +50,22 @@ async def get_instagram_caption(request: Request, postInput: CaptionInput):
         raise HTTPException(status_code=502, detail="Failed to fetch caption")
     return {"caption": caption}
 
-@router.post("/caption/optimize", summary="Augment caption with a LLM")
+@router.post(
+    "/caption/optimize", 
+    name="caption_optimize",
+    summary="Augment caption with a LLM"
+)
 async def optimize_caption(request: Request, postInput: OptimizeInput):
     return {
         "caption": llmclient.optimizeCaption(postInput.sentiment, postInput.caption)
     }
     
 
-@router.post("/", summary="Classify sentiment of a social media post")
+@router.post(
+    "/sentiment/base", 
+    name="sentiment_base",
+    summary="Classify sentiment of a social media post"
+)
 async def classify_sentiment(request: Request, post: PostInput):
 
     logger.debug(post)
