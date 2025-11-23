@@ -6,6 +6,7 @@ from routes.internal import background_health_checker
 from utils.router import include_route_modules
 from utils.worker import WorkerPool
 from utils.config import Config
+from utils.healthChecker import healthChecker
 from fastapi import FastAPI, Request
 from slowapi.errors import RateLimitExceeded
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -42,6 +43,8 @@ async def lifespan(app: FastAPI):
     await app.state.worker_pool.initialize(config)
     include_route_modules(app)
     
+    healthChecker.initialize_routes(app)
+        
     # Start background health checker as a task (don't await it!)
     health_checker_task = asyncio.create_task(background_health_checker(app))
     app.state.health_checker_task = health_checker_task
