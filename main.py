@@ -86,4 +86,4 @@ if __name__ == "__main__":
         module_name = os.path.splitext(os.path.basename(__file__))[0]
         uvicorn.run(f"{module_name}:app", host=host, port=port, reload=True)
     else:
-        uvicorn.run(app, host=args.host, port=args.port, reload=False)
+        uvicorn.run(app, host=host, port=port, reload=False)
