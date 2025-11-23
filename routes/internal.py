@@ -5,24 +5,16 @@ import asyncio
 from utils.functions import humanize_time
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request
+from fastapi.routing import APIRoute
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from collections import deque
+from utils.healthChecker import healthChecker
 
 logger = logging.getLogger(__name__)
 
 # Store status history (max 90 entries = ~15 hours at 10-min intervals)
-STATUS_HISTORY = {
-    "SocioLens API": deque(maxlen=90)
-}
 
-SERVICES = {
-    "SocioLens API": {
-        "route": "service",
-        "last_checked": None,
-        "status": "Not ready"
-    }
-}
 
 def _should_update(last_checked: datetime | None, threshold_minutes: int = 10) -> bool:
     """Return True if last_checked is None or older than threshold_minutes."""
@@ -33,21 +25,25 @@ def _should_update(last_checked: datetime | None, threshold_minutes: int = 10) -
 
 def check_service_status(app):
     """Check the status of services and update history."""
-    for name, meta in SERVICES.items():
+    for name, meta in healthChecker.SERVICES.items():
         if name == 'SocioLens API':
             worker_pool = getattr(app.state, 'worker_pool', None)
             ready = worker_pool is not None and getattr(worker_pool, "workers", None) and len(worker_pool.workers) > 0
-            SERVICES[name]["status"] = "Ready" if ready else "Not ready"
+            healthChecker.SERVICES[name]["status"] = "Ready" if ready else "Not ready"
+
+        # hacky fix for now :p
+        else:
+            healthChecker.SERVICES[name]["status"] = "Ready"
             
-        SERVICES[name]['last_checked'] = datetime.now(timezone.utc)
+        healthChecker.SERVICES[name]['last_checked'] = datetime.now(timezone.utc)
         
         # Add to history
-        STATUS_HISTORY[name].append({
-            "status": SERVICES[name]["status"],
-            "timestamp": SERVICES[name]['last_checked']
+        healthChecker.STATUS_HISTORY[name].append({
+            "status": healthChecker.SERVICES[name]["status"],
+            "timestamp": healthChecker.SERVICES[name]['last_checked']
         })
         
-        logger.info(f"Health check: {name} - {SERVICES[name]['status']}")
+        logger.info(f"Health check: {name} - {healthChecker.SERVICES[name]['status']}")
 
 async def background_health_checker(app):
     """Background task that runs health checks every 10 minutes."""
@@ -70,6 +66,19 @@ templates = Jinja2Templates(directory="templates")
 router = APIRouter(prefix="/internal", tags=["internal"])
 
 
+@router.get("/endpoints")
+def get_endpoints(request: Request):
+    app = request.app
+    routes = []
+    for route in app.routes:
+        if isinstance(route, APIRoute):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods),
+                "name": route.name
+            })
+    return routes
+
 @router.get("/pid")
 def pid():
     return {"pid": os.getpid()}
@@ -82,9 +91,9 @@ def health(request: Request):
             'route': meta['route'], 
             'status': meta['status'], 
             'last_checked': '...' if not meta['last_checked'] else humanize_time(meta['last_checked']),
-            'history': list(STATUS_HISTORY[name])
+            'history': list(healthChecker.STATUS_HISTORY[name])
         } 
-        for name, meta in SERVICES.items() 
+        for name, meta in healthChecker.SERVICES.items() 
     }
             
     return templates.TemplateResponse("health.html", { "request": request, 'services': health_data })
