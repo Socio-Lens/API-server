@@ -17,13 +17,49 @@ st.set_page_config(
 # Custom CSS for better UI
 st.markdown("""
 <style>
+    /* Header with gradient and glassmorphism */
     .main-header {
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
-        border-radius: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        padding: 3rem 2rem;
+        border-radius: 20px;
         margin-bottom: 2rem;
         color: white;
         text-align: center;
+        box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .main-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 15s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1) rotate(0deg); }
+        50% { transform: scale(1.1) rotate(180deg); }
+    }
+    
+    .main-header h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .main-header p {
+        font-size: 1.2rem;
+        opacity: 0.95;
+        position: relative;
+        z-index: 1;
     }
     .metric-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -271,7 +307,7 @@ if analyze_button:
         with st.spinner("Analyzing sentiment..."):
             try:
                 response = requests.post(
-                    f"{backend_url}/service",
+                    f"{backend_url}/service/sentiment/base",
                     json={"text": caption_text},
                     headers={"Content-Type": "application/json"},
                     timeout=120
@@ -505,7 +541,7 @@ if st.session_state.get("analysis_result"):
             with st.spinner("🔄 Analyzing improved caption..."):
                 try:
                     reanalysis_response = requests.post(
-                        backend_url,
+                        f"{backend_url}/service/sentiment/base",
                         json={"text": st.session_state["improved_caption"]},
                         headers={"Content-Type": "application/json"},
                         timeout=120
