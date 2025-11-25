@@ -131,6 +131,10 @@ class ResponseTimeMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(skip) for skip in skip_paths):
             return await call_next(request)
         
+        # Skip OPTIONS requests (CORS preflight - not actual API calls)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        
         # Start timer
         start_time = time.perf_counter()
         
