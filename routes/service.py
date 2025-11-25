@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from modules.scrapper.InstaScrapper import InstaScrapper
 from modules.LLM.Groq import GroqClient
+from utils.validations import validate_caption_for_sentiment, validate_post_url
 
 
 logger = logging.getLogger(__name__)
@@ -33,14 +34,12 @@ def validate_request(request):
     summary="Get the caption from an Instagram URL"
 )
 async def get_instagram_caption(request: Request, postInput: CaptionInput):
-    logger.debug(postInput)
+    logger.debug(f"Received Instagram URL: {postInput.url}")
     
-    parsed = urlparse(postInput.url)
-    domain = parsed.netloc.lower()
-    logger.debug(domain)
-
-    if domain != 'www.instagram.com':
-        raise HTTPException(status_code=400, detail="Invalid or unsupported URL domain")
+    # Validate Instagram post URL
+    is_valid, error_msg = validate_post_url(postInput.url, platform="instagram")
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=f"Invalid URL: {error_msg}")
     
     try:
         scrapper = InstaScrapper()
@@ -56,6 +55,19 @@ async def get_instagram_caption(request: Request, postInput: CaptionInput):
     summary="Augment caption with a LLM"
 )
 async def optimize_caption(request: Request, postInput: OptimizeInput):
+    # Validate caption
+    is_valid, error_msg = validate_caption_for_sentiment(postInput.caption)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=f"Invalid caption: {error_msg}")
+    
+    # Validate sentiment value
+    valid_sentiments = ["positive", "negative", "neutral"]
+    if postInput.sentiment.lower() not in valid_sentiments:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid sentiment. Must be one of: {', '.join(valid_sentiments)}"
+        )
+    
     return {
         "caption": llmclient.optimizeCaption(postInput.sentiment, postInput.caption)
     }
@@ -70,10 +82,13 @@ async def classify_sentiment(request: Request, post: PostInput):
 
     logger.debug(post)
 
+    # Validate text/caption
+    is_valid, error_msg = validate_caption_for_sentiment(post.text)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=f"Invalid text: {error_msg}")
+    
     text = post.text.strip()
     worker_pool = request.app.state.worker_pool
-    if not text:
-        raise HTTPException(status_code=400, detail="Empty text provided")
     
     worker = await worker_pool.acquire_worker()
 
