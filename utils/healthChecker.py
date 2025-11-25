@@ -12,7 +12,7 @@ class HealthChecker:
         for route in app.routes:
             if isinstance(route, APIRoute):
                 # skip internal routes
-                if "internal" in route.tags:
+                if "internal" in route.tags or "metrics" in route.tags:
                     continue
 
                 routeData = {
