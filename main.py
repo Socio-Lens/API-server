@@ -7,6 +7,7 @@ from utils.router import include_route_modules
 from utils.worker import WorkerPool
 from utils.config import Config
 from utils.healthChecker import healthChecker
+from utils.metrics import ResponseTimeTracker, ResponseTimeMiddleware
 from fastapi import FastAPI, Request
 from slowapi.errors import RateLimitExceeded
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -78,6 +79,14 @@ app.add_middleware(
     allow_methods=["*"],       # Allow all HTTP methods
     allow_headers=["*"],       # Allow all headers
 )
+
+# Initialize response time tracker (single instance shared by middleware and routes)
+response_tracker = ResponseTimeTracker()
+app.state.response_tracker = response_tracker
+
+# Add response time tracking middleware
+# Note: This must be added after other middlewares to measure total response time
+app.add_middleware(ResponseTimeMiddleware, tracker=response_tracker)
 
 
 
