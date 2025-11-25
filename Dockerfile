@@ -26,4 +26,4 @@ COPY . .
 
 # (optional) prevent ENTRYPOINT surprises
 ENTRYPOINT []
-CMD ["uv", "run", "main"]
+CMD ["uv", "run", "main.py"]
