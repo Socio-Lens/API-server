@@ -17,7 +17,7 @@ class GroqClient:
             messages=[
             {
                 "role": "user",
-                "content": f"The caption from a social media post is given below. It is of {sentiment} sentiment, improve the caption to attract more users and interactions. include relevant tags and emojis if necessary\n The caption: '{caption}'"
+                "content": f"The caption from a social media post is given below. Modify and improve the caption to attract more users and interactions and it reflects a {sentiment} sentiment. include relevant tags and emojis if necessary\n The caption: '{caption}'"
             }
             ],
             temperature=1,
